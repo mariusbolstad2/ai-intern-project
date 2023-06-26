@@ -1,3 +1,4 @@
+import json
 import os
 
 import openai
@@ -25,4 +26,11 @@ def index():
 
 
 def generate_prompt(input):
-    return "Answer this question using your finest language. Keep it short and concise.   " + input
+    with open('dummy-data.json') as file:
+        data = json.load(file)
+
+    # Dump JSON data as a string
+    json_string = json.dumps(data)
+    prompt = "here is the relevant data structure for the question: " + '{"invoice_number": "KpoOqMlU", "customer_name": "GzzpuHvvYh", "amount": 372.71, "vat_percentage": 5, "konstnadskonto": 1758, "due_date": "2023-06-12"}' + " ---- Here is the data: " + json_string + "------ Here is the question: " + input
+    print(prompt)
+    return prompt
