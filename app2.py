@@ -2,15 +2,38 @@ import os
 import json
 import openai
 import requests
+from dotenv import load_dotenv
 from tenacity import retry, wait_random_exponential, stop_after_attempt
 from termcolor import colored
 import sqlite3
+from flask import Flask, redirect, render_template, request, url_for
+
+app = Flask(__name__)
+openai.api_key = os.getenv("OPENAI_API_KEY")
+load_dotenv()
+messages = []
+messages.append({"role": "system", "content": "Answer user questions by generating SQL queries against the Chinook Music Database."})
+
+@app.route("/", methods=("GET", "POST"))
+def index():
+    if request.method == "POST":
+        question = request.form["question"]
+        print(question)
+        messages.append({"role": "user", "content": {question}})
+        chat_response = chat_completion_request(messages, functions)
+        messages.append(chat_response)
+        return redirect(url_for("index", result=chat_response["choices"][0].tec))
+    result = request.args.get("result")
+    return render_template("index.html", result=result)
+
+
 
 conn = sqlite3.connect("data/Chinook.db")
 print("Opened database successfully")
 
-openai.api_key = "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"
-GPT_MODEL = "gpt-3.5-turbo-0613"
+
+openai.api_key = os.getenv("OPENAI_API_KEY")
+GPT_MODEL = "gpt-4-0613"
 def get_table_names(conn):
     """Return a list of table names."""
     table_names = []
@@ -133,13 +156,4 @@ def execute_function_call(message):
         results = f"Error: function {message['function_call']['name']} does not exist"
     return results
 
-messages = []
-messages.append({"role": "system", "content": "Answer user questions by generating SQL queries against the Chinook Music Database."})
-messages.append({"role": "user", "content": "Hi, give me the top three albums ranked by number of songs. Please include the name of the artist"})
-chat_response = chat_completion_request(messages, functions)
-assistant_message = chat_response.json()["choices"][0]["message"]
-messages.append(assistant_message)
-if assistant_message.get("function_call"):
-    results = execute_function_call(assistant_message)
-    messages.append({"role": "function", "name": assistant_message["function_call"]["name"], "content": results})
-pretty_print_conversation(messages)
+
